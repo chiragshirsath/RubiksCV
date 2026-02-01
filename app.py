@@ -96,7 +96,7 @@ def rotate_face(face, turns=1):
 
 def cycle_edges(state, faces, indices, turns=1):
     """Cycle edges between faces"""
-    state = copy.deepcopy(state)
+    # Note: state is already a deep copy from apply_move, so we can modify it directly
     for _ in range(turns % 4):
         tmp = [state[faces[-1]][i] for i in indices[-1]]
         for i in reversed(range(1, 4)):
@@ -114,22 +114,27 @@ def apply_move(state, move):
     state = copy.deepcopy(state)
     state[face] = rotate_face(state[face], turns)
     if face == 'U':
-        cycle_edges(state, ['B', 'R', 'F', 'L'], [[0,1,2]]*4, turns)
+        state = cycle_edges(state, ['B', 'R', 'F', 'L'], [[0,1,2]]*4, turns)
     elif face == 'D':
-        cycle_edges(state, ['F', 'R', 'B', 'L'], [[6,7,8]]*4, turns)
+        state = cycle_edges(state, ['F', 'R', 'B', 'L'], [[6,7,8]]*4, turns)
     elif face == 'F':
-        cycle_edges(state, ['U', 'R', 'D', 'L'], [[6,7,8], [0,3,6], [2,1,0], [8,5,2]], turns)
+        state = cycle_edges(state, ['U', 'R', 'D', 'L'], [[6,7,8], [0,3,6], [2,1,0], [8,5,2]], turns)
     elif face == 'B':
-        cycle_edges(state, ['U', 'L', 'D', 'R'], [[2,1,0], [0,3,6], [6,7,8], [8,5,2]], turns)
+        state = cycle_edges(state, ['U', 'L', 'D', 'R'], [[2,1,0], [0,3,6], [6,7,8], [8,5,2]], turns)
     elif face == 'L':
-        cycle_edges(state, ['U', 'F', 'D', 'B'], [[0,3,6]]*3 + [[8,5,2]], turns)
+        state = cycle_edges(state, ['U', 'F', 'D', 'B'], [[0,3,6]]*3 + [[8,5,2]], turns)
     elif face == 'R':
-        cycle_edges(state, ['U', 'B', 'D', 'F'], [[8,5,2], [0,3,6], [8,5,2], [8,5,2]], turns)
+        state = cycle_edges(state, ['U', 'B', 'D', 'F'], [[8,5,2], [0,3,6], [8,5,2], [8,5,2]], turns)
     return state
 
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')
+
+@app.route('/Resources/<path:filename>')
+def resources(filename):
+    """Serve resources (move images)"""
+    return send_from_directory('Resources', filename)
 
 @app.route('/api/classify-colors', methods=['POST'])
 def classify_colors():

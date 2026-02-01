@@ -12,7 +12,12 @@
         
         <div class="main-content">
             <div class="left-panel">
-                <div class="camera-section">
+                <div class="mode-toggle">
+                    <button id="cameraModeBtn" class="mode-btn active">📷 Camera Mode</button>
+                    <button id="manualModeBtn" class="mode-btn">✏️ Manual Mode</button>
+                </div>
+                
+                <div class="camera-section" id="cameraSection">
                     <video id="video" autoplay playsinline></video>
                     <canvas id="canvas" style="display: none;"></canvas>
                     <div class="controls">
@@ -21,7 +26,7 @@
                     </div>
                 </div>
                 
-                <div class="scan-section">
+                <div class="scan-section" id="scanSection">
                     <h2>Scan Faces</h2>
                     <div class="face-buttons">
                         <button class="face-btn" data-face="U">U (Up)</button>
@@ -32,8 +37,48 @@
                         <button class="face-btn" data-face="B">B (Back)</button>
                     </div>
                     <div class="scanned-faces">
-                        <p>Scanned: <span id="scannedCount">0</span>/6</p>
-                        <div id="scannedList"></div>
+                        <p>Scanned: <span class="scanned-count">0</span>/6</p>
+                        <div class="scanned-list"></div>
+                    </div>
+                </div>
+                
+                <div class="manual-editor" id="manualEditor" style="display: none;">
+                    <h2>Manual Color Editor</h2>
+                    <div class="color-selector">
+                        <p>Select Color:</p>
+                        <div class="color-buttons">
+                            <button class="color-btn active" data-color="W" style="background: #ffffff; border: 2px solid #333;">W</button>
+                            <button class="color-btn" data-color="Y" style="background: #ffeb3b;">Y</button>
+                            <button class="color-btn" data-color="R" style="background: #f44336;">R</button>
+                            <button class="color-btn" data-color="O" style="background: #ff9800;">O</button>
+                            <button class="color-btn" data-color="G" style="background: #4caf50;">G</button>
+                            <button class="color-btn" data-color="B" style="background: #2196f3;">B</button>
+                        </div>
+                    </div>
+                    <div class="face-selector">
+                        <p>Select Face to Edit:</p>
+                        <div class="face-tabs">
+                            <button class="face-tab active" data-face="U">U (Up)</button>
+                            <button class="face-tab" data-face="R">R (Right)</button>
+                            <button class="face-tab" data-face="F">F (Front)</button>
+                            <button class="face-tab" data-face="D">D (Down)</button>
+                            <button class="face-tab" data-face="L">L (Left)</button>
+                            <button class="face-tab" data-face="B">B (Back)</button>
+                        </div>
+                    </div>
+                    <div class="manual-face-editor" id="manualFaceEditor">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    <div class="manual-actions">
+                        <button id="clearFaceBtn" class="btn btn-secondary">Clear Current Face</button>
+                        <button id="clearAllBtn" class="btn btn-secondary">Clear All Faces</button>
+                    </div>
+                </div>
+                
+                <div class="solve-section">
+                    <div class="scanned-faces">
+                        <p>Faces Set: <span class="scanned-count">0</span>/6</p>
+                        <div class="scanned-list"></div>
                     </div>
                     <button id="solveBtn" class="btn btn-success" disabled>Solve Cube</button>
                 </div>
@@ -50,9 +95,13 @@
                     <div id="solutionText"></div>
                     <div class="move-guidance">
                         <h3>Current Move</h3>
+                        <div id="visualCubeContainer"></div>
                         <div id="currentMove"></div>
-                        <button id="nextMoveBtn" class="btn btn-primary">Next Move</button>
-                        <button id="applyMoveBtn" class="btn btn-success" style="display: none;">Apply Move</button>
+                        <div class="move-info">
+                            <div id="moveNumber"></div>
+                            <div id="moveDescription"></div>
+                        </div>
+                        <button id="nextMoveBtn" class="btn btn-primary btn-large">Next Move</button>
                     </div>
                 </div>
             </div>
