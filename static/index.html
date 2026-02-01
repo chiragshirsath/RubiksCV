@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Solver</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🧊 Rubik's Cube Solver</h1>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="camera-section">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    <div class="controls">
+                        <button id="startCamera" class="btn btn-primary">Start Camera</button>
+                        <button id="stopCamera" class="btn btn-secondary" style="display: none;">Stop Camera</button>
+                    </div>
+                </div>
+                
+                <div class="scan-section">
+                    <h2>Scan Faces</h2>
+                    <div class="face-buttons">
+                        <button class="face-btn" data-face="U">U (Up)</button>
+                        <button class="face-btn" data-face="R">R (Right)</button>
+                        <button class="face-btn" data-face="F">F (Front)</button>
+                        <button class="face-btn" data-face="D">D (Down)</button>
+                        <button class="face-btn" data-face="L">L (Left)</button>
+                        <button class="face-btn" data-face="B">B (Back)</button>
+                    </div>
+                    <div class="scanned-faces">
+                        <p>Scanned: <span id="scannedCount">0</span>/6</p>
+                        <div id="scannedList"></div>
+                    </div>
+                    <button id="solveBtn" class="btn btn-success" disabled>Solve Cube</button>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="cube-viewer">
+                    <h2>Cube State</h2>
+                    <div id="cubeDisplay"></div>
+                </div>
+                
+                <div class="solution-section" id="solutionSection" style="display: none;">
+                    <h2>Solution</h2>
+                    <div id="solutionText"></div>
+                    <div class="move-guidance">
+                        <h3>Current Move</h3>
+                        <div id="currentMove"></div>
+                        <button id="nextMoveBtn" class="btn btn-primary">Next Move</button>
+                        <button id="applyMoveBtn" class="btn btn-success" style="display: none;">Apply Move</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

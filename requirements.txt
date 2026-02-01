@@ -1,0 +1,6 @@
+Flask==3.0.0
+flask-cors==4.0.0
+opencv-python==4.8.1.78
+numpy>=1.26.0
+kociemba==1.2.1
+gunicorn==21.2.0
