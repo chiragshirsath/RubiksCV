@@ -1,13 +1,94 @@
-# 🧊 Rubik's Cube Solver - Web & Desktop Versions
+# RubiksCV
 
-A real-time **Rubik's Cube Solver** that uses your webcam to:
+A computer vision-powered Rubik's Cube solver that uses your webcam to scan, analyze, and solve any 3x3 cube in real-time.
 
-1. Scan each face of a real cube  
-2. Classify sticker colors with HSV thresholds  
-3. Solve the cube using the [Kociemba two-phase algorithm](https://github.com/hkociemba/RubiksCube-TwophaseSolver)  
-4. Guide you through each move with visual feedback  
+## Overview
 
----
+RubiksCV captures each face of your Rubik's Cube through a webcam, identifies sticker colors using HSV color classification, and generates an optimal solution using the Kociemba two-phase algorithm. Available as both a web application and desktop application.
+
+## Features
+
+- Real-time webcam color detection with HSV classification
+- Kociemba two-phase algorithm for optimal solutions
+- Step-by-step visual move guidance with arrow overlays
+- Web version with browser-based camera access
+- Desktop version with OpenCV visualization
+- Customizable HSV calibration for different lighting conditions
+
+## Quick Start
+
+### Web Version
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+Open `http://localhost:5001` in your browser.
+
+### Desktop Version
+
+```bash
+pip install opencv-python numpy kociemba
+
+# Terminal 1: Start the viewer
+python State.py
+
+# Terminal 2: Start the scanner
+python Main.py
+```
+
+## How It Works
+
+1. **Scan** - Point your webcam at each face and press the corresponding key (U, R, F, D, L, B)
+2. **Detect** - The system samples 9 points per face and classifies colors via HSV thresholds
+3. **Solve** - Kociemba algorithm generates an optimal move sequence
+4. **Guide** - Follow on-screen arrows to execute each move on your physical cube
+
+## Project Structure
+
+```
+├── app.py              # Flask web server
+├── Main.py             # Desktop scanner and solver
+├── State.py            # Desktop cube state viewer
+├── Calibrator.py       # HSV threshold calibration tool
+├── static/             # Web frontend (HTML, CSS, JS)
+├── Resources/          # Arrow overlays and color tiles
+└── requirements.txt    # Python dependencies
+```
+
+## HSV Calibration
+
+Color detection accuracy depends on your specific cube and lighting. Run `Calibrator.py` to tune the HSV thresholds, then update the `classify_hue()` function in `app.py` (web) or `Main.py` (desktop).
+
+## Tech Stack
+
+- **Python** - Core language
+- **OpenCV** - Image capture and processing
+- **Flask** - Web server
+- **kociemba** - Cube solving algorithm
+- **NumPy** - Numerical operations
+
+## Deployment
+
+The web version can be deployed to Heroku, Render, Railway, or any platform supporting Python/Flask. Configuration files included:
+
+- `Procfile` - Heroku process definition
+- `runtime.txt` - Python version specification
+- `requirements.txt` - Dependencies
+
+## Controls
+
+| Action | Web | Desktop |
+|--------|-----|---------|
+| Scan face | Click face button | Press U/R/F/D/L/B |
+| Confirm scan | Automatic | Press ESC when done |
+| Next move | Click "Next Move" | Press SPACE |
+| Exit | Close browser | Press ESC |
+
+## License
+
+MIT
 
 ## 🌐 Web Version (NEW!)
 
