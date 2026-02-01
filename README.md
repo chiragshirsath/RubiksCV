@@ -1,126 +1,168 @@
 # RubiksCV
 
-A computer vision-powered Rubik's Cube solver that uses your webcam to scan, analyze, and solve any 3x3 cube in real-time. Available as both a web application and a desktop application.
-
----
+A computer vision-powered Rubik's Cube solver that uses your webcam to scan, detect colors, and solve any standard 3x3 Rubik's Cube in real-time.
 
 ## Table of Contents
 
-1. [What is RubiksCV?](#what-is-rubikscv)
-2. [How It Works](#how-it-works)
-3. [Features](#features)
-4. [Prerequisites](#prerequisites)
-5. [Installation](#installation)
-6. [Usage](#usage)
-   - [Web Version](#web-version)
-   - [Desktop Version](#desktop-version)
-7. [Understanding Cube Notation](#understanding-cube-notation)
-8. [HSV Color Calibration](#hsv-color-calibration)
-9. [Project Architecture](#project-architecture)
-10. [API Reference (Web Version)](#api-reference-web-version)
-11. [Troubleshooting](#troubleshooting)
-12. [Tech Stack](#tech-stack)
-13. [License](#license)
+- [What is RubiksCV?](#what-is-rubikscv)
+- [How It Works](#how-it-works)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Web Version](#web-version)
+  - [Desktop Version](#desktop-version)
+- [Understanding the Code](#understanding-the-code)
+- [HSV Color Calibration](#hsv-color-calibration)
+- [Cube Notation](#cube-notation)
+- [Troubleshooting](#troubleshooting)
+- [Technologies Used](#technologies-used)
 
 ---
 
 ## What is RubiksCV?
 
-RubiksCV is a real-time Rubik's Cube solving assistant. Instead of manually entering your cube's colors, you simply point your webcam at each face of your physical cube. The application:
+RubiksCV is an application that helps you solve a physical Rubik's Cube using computer vision. Instead of manually entering the cube's state, you simply show each face of your cube to a webcam. The application:
 
-1. Captures a video frame from your webcam
-2. Samples 9 points (one for each sticker) on the visible face
-3. Converts each pixel from BGR to HSV color space
-4. Classifies each sticker as White, Yellow, Red, Orange, Green, or Blue
-5. After all 6 faces are scanned, generates an optimal solution using the Kociemba two-phase algorithm
-6. Guides you through each move with visual overlays until your cube is solved
+1. Detects the 9 colored stickers on each face
+2. Builds a complete digital representation of your cube
+3. Calculates the optimal solution using the Kociemba algorithm
+4. Guides you through each move with visual arrows
+
+The project includes two versions:
+- **Web Version**: Runs in your browser, accessible from any device with a camera
+- **Desktop Version**: Native OpenCV application with real-time visualization
 
 ---
 
 ## How It Works
 
-### Color Detection Pipeline
+### Step 1: Color Detection
+
+When you point your webcam at a cube face, the application samples 9 points in a 3x3 grid pattern. Each point's color is analyzed using the HSV (Hue, Saturation, Value) color space, which is more reliable for color detection than RGB.
+
+The `classify_hue()` function determines which of the 6 cube colors (White, Yellow, Red, Orange, Green, Blue) each sticker represents:
 
 ```
-Webcam Frame → BGR Image → HSV Conversion → 9-Point Sampling → Color Classification
+HSV Color Ranges:
+- White:  Low saturation (S <= 80), high value (V >= 50)
+- Red:    Hue 0-4 or 165-180, high saturation
+- Orange: Hue 5-20, high saturation
+- Yellow: Hue 21-45, high saturation
+- Green:  Hue 46-90, high saturation
+- Blue:   Hue 91-140, high saturation
 ```
 
-The application captures frames from your webcam and converts them from BGR (Blue-Green-Red) to HSV (Hue-Saturation-Value) color space. HSV is more robust for color detection because it separates color information (Hue) from lighting conditions (Value).
+### Step 2: Building the Cube State
 
-For each of the 9 sticker positions on a face, the system samples the HSV values and classifies the color:
+After scanning all 6 faces (U, R, F, D, L, B), the application constructs a 54-character string representing every sticker. The center sticker of each face determines that face's identity.
 
-| Color  | Hue Range | Saturation | Value |
-|--------|-----------|------------|-------|
-| White  | Any       | Low (<=80) | High (>=50) |
-| Red    | 0-4 or 165-180 | High (>80) | Any |
-| Orange | 5-20      | High (>80) | Any |
-| Yellow | 21-45     | High (>80) | Any |
-| Green  | 46-90     | High (>80) | Any |
-| Blue   | 91-140    | High (>80) | Any |
+Example cube string: `UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB` (solved cube)
 
-### Solving Algorithm
+### Step 3: Solving with Kociemba
 
-Once all 6 faces are scanned, the cube state is converted to a 54-character string (9 stickers x 6 faces). This string is passed to the Kociemba two-phase algorithm, which finds a near-optimal solution typically in 20 moves or fewer.
+The Kociemba two-phase algorithm finds a near-optimal solution (typically 20 moves or fewer). This algorithm:
+- Phase 1: Reduces the cube to a subset of positions
+- Phase 2: Solves from that subset to the solved state
 
-The Kociemba algorithm works in two phases:
-1. Phase 1: Reduces the cube to a subset that can be solved with specific moves only
-2. Phase 2: Solves the reduced cube optimally
+### Step 4: Move Guidance
+
+The solution is displayed as a sequence of moves. The application shows arrow overlays indicating:
+- Which face to turn
+- Which direction to turn (clockwise or counter-clockwise)
+- Special instructions for back-face moves (rotate the cube first)
 
 ---
 
 ## Features
 
-### Core Features
-- Real-time webcam color detection using HSV classification
-- Kociemba two-phase algorithm for optimal solutions (typically under 20 moves)
-- Step-by-step visual guidance with arrow overlays
-- Live cube state visualization
-
-### Web Version
-- Browser-based camera access (no installation required)
-- Works on desktop, tablet, and mobile devices
-- RESTful API for color classification and solving
-- Deployable to any Python-compatible hosting platform
-
-### Desktop Version
-- Native OpenCV windows for low-latency display
-- Dual-window setup: scanner + state viewer
-- Socket-based real-time state synchronization
-- Arrow overlay images for move guidance
+| Feature | Web Version | Desktop Version |
+|---------|-------------|-----------------|
+| Browser-based | Yes | No |
+| Real-time preview | Yes | Yes |
+| Color detection | Yes | Yes |
+| Visual move guidance | Yes | Yes (with arrows) |
+| Cube state viewer | In-browser | Separate window |
+| Mobile support | Yes | No |
+| Offline capable | No | Yes |
 
 ---
 
-## Prerequisites
+## Project Structure
 
-- Python 3.8 or higher
-- A webcam
-- A physical 3x3 Rubik's Cube
-- Good lighting conditions (important for accurate color detection)
+```
+RubiksCV/
+|
+|-- app.py                  # Flask web server with REST API
+|-- Main.py                 # Desktop scanner and solver
+|-- State.py                # Desktop cube state viewer (socket-based)
+|-- Calibrator.py           # HSV threshold calibration tool
+|
+|-- static/                 # Web frontend
+|   |-- index.html          # Main web page
+|   |-- style.css           # Styling
+|   |-- app.js              # Frontend JavaScript
+|
+|-- Resources/              # Visual assets
+|   |-- Colors/             # Colored tiles for state viewer
+|   |   |-- white.png
+|   |   |-- yellow.png
+|   |   |-- red.png
+|   |   |-- orange.png
+|   |   |-- green.png
+|   |   |-- blue.png
+|   |
+|   |-- U.png, U'.png       # Arrow overlays for each move
+|   |-- R.png, R'.png
+|   |-- F.png, F'.png
+|   |-- D.png, D'.png
+|   |-- L.png, L'.png
+|   |-- TURN_BACK.png
+|
+|-- requirements.txt        # Python dependencies
+|-- Procfile               # Heroku deployment config
+|-- runtime.txt            # Python version specification
+```
+
+### File Descriptions
+
+| File | Purpose |
+|------|---------|
+| `app.py` | Flask web application. Handles image processing, color classification, and cube solving via REST endpoints. |
+| `Main.py` | Desktop application entry point. Opens webcam, scans faces, calls solver, and displays move guidance with arrow overlays. |
+| `State.py` | Desktop cube visualizer. Connects via socket to Main.py and renders a 2D unfolded view of the current cube state. |
+| `Calibrator.py` | HSV calibration utility. Shows trackbars to adjust hue, saturation, and value ranges for color detection tuning. |
 
 ---
 
 ## Installation
 
-### Clone the Repository
+### Prerequisites
 
-```bash
-git clone https://github.com/chiragshirsath/RubiksCV.git
-cd RubiksCV
-```
+- Python 3.10 or higher
+- Webcam
+- pip (Python package manager)
 
-### Install Dependencies
+### Setup
 
-```bash
-pip install -r requirements.txt
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/chiragshirsath/RubiksCV.git
+   cd RubiksCV
+   ```
 
-This installs:
-- `Flask==3.0.0` - Web framework
-- `flask-cors==4.0.0` - Cross-origin resource sharing
-- `opencv-python==4.8.1.78` - Computer vision library
-- `numpy>=1.24.0,<2.0.0` - Numerical computing
-- `kociemba==1.2.1` - Rubik's Cube solving algorithm
-- `gunicorn==21.2.0` - Production WSGI server
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   This installs:
+   - `Flask` - Web framework
+   - `flask-cors` - Cross-origin resource sharing
+   - `opencv-python` - Computer vision library
+   - `numpy` - Numerical computing
+   - `kociemba` - Rubik's Cube solving algorithm
+   - `gunicorn` - Production WSGI server
 
 ---
 
@@ -128,191 +170,260 @@ This installs:
 
 ### Web Version
 
-1. Start the Flask server:
+1. **Start the server**
+   ```bash
+   python app.py
+   ```
 
-```bash
-python app.py
-```
+2. **Open your browser**
+   Navigate to `http://localhost:5001`
 
-2. Open your browser and navigate to `http://localhost:5001`
+3. **Allow camera access**
+   Click "Start Camera" and grant permission when prompted
 
-3. Click "Start Camera" and allow camera access when prompted
+4. **Scan each face**
+   - Hold your cube so one face fills the camera view
+   - Align the 9 stickers with the detection grid
+   - Click the corresponding face button (U, R, F, D, L, B)
+   - Repeat for all 6 faces
 
-4. Position your cube so one face fills the scanning area
-
-5. Click the face button (U, R, F, D, L, B) to scan that face
-
-6. Repeat for all 6 faces
-
-7. Click "Solve Cube" to generate the solution
-
-8. Follow the step-by-step moves displayed on screen
-
-**Note:** Port 5001 is used by default to avoid conflicts with macOS AirPlay Receiver on port 5000.
+5. **Solve**
+   - Click "Solve Cube"
+   - Follow the move sequence displayed on screen
+   - Use "Next Move" to advance through the solution
 
 ### Desktop Version
 
-The desktop version uses two separate windows that communicate via sockets.
+The desktop version requires two terminal windows:
 
 **Terminal 1 - Start the State Viewer:**
 ```bash
 python State.py
 ```
-This opens a window showing the unfolded cube state. It listens on port 9999 for state updates.
+This opens a window showing a 2D representation of your cube.
 
 **Terminal 2 - Start the Scanner:**
 ```bash
 python Main.py
 ```
-This opens the webcam feed with scanning grid overlay.
 
 **Scanning Process:**
-1. Position your cube in front of the webcam
-2. Press the key corresponding to the face you're scanning:
-   - `U` - Up (top face)
-   - `D` - Down (bottom face)
-   - `F` - Front
-   - `B` - Back
-   - `L` - Left
-   - `R` - Right
-3. After scanning all 6 faces, press `ESC`
-4. The solution appears as arrow overlays
-5. Press `SPACE` to confirm each move and advance
-6. Press `ESC` to exit at any time
+1. Point your webcam at a cube face
+2. Press the corresponding key (U, R, F, D, L, B) to scan
+3. The terminal shows the detected colors for confirmation
+4. Repeat for all 6 faces
+5. Press ESC when done scanning
+
+**Solving Process:**
+1. The solution appears in the terminal
+2. Arrow overlays show which move to make
+3. Press SPACE to confirm each move
+4. The State Viewer updates in real-time
+5. Press ESC to exit at any time
+
+### Keyboard Controls (Desktop)
+
+| Key | Action |
+|-----|--------|
+| U | Scan Up face |
+| R | Scan Right face |
+| F | Scan Front face |
+| D | Scan Down face |
+| L | Scan Left face |
+| B | Scan Back face |
+| SPACE | Confirm move (during solve) |
+| ESC | Exit / Finish scanning |
 
 ---
 
-## Understanding Cube Notation
+## Understanding the Code
 
-Standard Rubik's Cube notation is used throughout this application:
+### Color Classification Logic
 
-### Face Names
-| Letter | Face | Position |
-|--------|------|----------|
-| U | Up | Top face |
-| D | Down | Bottom face |
-| F | Front | Face facing you |
-| B | Back | Face away from you |
-| L | Left | Left face |
-| R | Right | Right face |
+The `classify_hue()` function in both `app.py` and `Main.py` converts HSV values to cube colors:
 
-### Move Types
-| Notation | Meaning |
-|----------|---------|
-| R | Rotate Right face 90° clockwise |
-| R' | Rotate Right face 90° counter-clockwise |
-| R2 | Rotate Right face 180° |
+```python
+def classify_hue(h, s, v):
+    # White: Low saturation indicates lack of color
+    if s <= 80 and v >= 50:
+        return "W"
+    
+    # Red: Hue wraps around at 0/180
+    elif ((h >= 0 and h <= 4) or (h >= 165 and h <= 180)) and s > 80:
+        return "R"
+    
+    # Orange: Just above red in the hue spectrum
+    elif h >= 5 and h <= 20 and s > 80:
+        return "O"
+    
+    # Yellow: Bright and distinct
+    elif h >= 21 and h <= 45 and s > 80:
+        return "Y"
+    
+    # Green: Mid-range hue
+    elif h >= 46 and h <= 90 and s > 80:
+        return "G"
+    
+    # Blue: Upper hue range
+    elif h >= 91 and h <= 140 and s > 80:
+        return "B"
+```
 
-The same pattern applies to all faces (U, D, F, B, L, R).
+### Cube State Representation
 
-### How to Hold Your Cube
-When scanning and solving:
-- White face on top (U)
-- Green face facing you (F)
-- Keep this orientation consistent throughout the solving process
+The cube is stored as a dictionary with 6 keys (U, R, F, D, L, B), each containing a list of 9 color codes:
+
+```python
+cube_state = {
+    'U': ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'],  # Up face
+    'R': ['R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R'],  # Right face
+    'F': ['G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G'],  # Front face
+    'D': ['Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y'],  # Down face
+    'L': ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],  # Left face
+    'B': ['B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B'],  # Back face
+}
+```
+
+Sticker positions are indexed 0-8:
+```
+| 0 | 1 | 2 |
+| 3 | 4 | 5 |   (4 is the center)
+| 6 | 7 | 8 |
+```
+
+### Move Application
+
+The `apply_move()` function simulates a physical move on the digital cube:
+
+1. **Rotate the face** - The 9 stickers on the turned face rotate 90 degrees
+2. **Cycle the edges** - Adjacent stickers on neighboring faces shift accordingly
 
 ---
 
 ## HSV Color Calibration
 
-Color detection accuracy heavily depends on your specific cube colors, camera, and lighting conditions. The default HSV thresholds may not work perfectly for your setup.
+Different lighting conditions and cube brands may require adjusting the color detection thresholds.
 
-### Running the Calibrator
+### Using the Calibrator
 
-```bash
-python Calibrator.py
-```
+1. Run the calibration tool:
+   ```bash
+   python Calibrator.py
+   ```
 
-This opens two windows:
-1. **Webcam Feed** - Live camera view
-2. **Masked Output** - Shows only pixels matching current HSV range
+2. A window with 6 trackbars appears:
+   - LH/UH - Lower/Upper Hue (0-179)
+   - LS/US - Lower/Upper Saturation (0-255)
+   - LV/UV - Lower/Upper Value (0-255)
 
-Use the trackbars to adjust:
-- **LH/UH** - Lower/Upper Hue (0-179)
-- **LS/US** - Lower/Upper Saturation (0-255)
-- **LV/UV** - Lower/Upper Value (0-255)
+3. Show a sticker to the camera and adjust trackbars until only that color is highlighted in the mask view
 
-### Calibration Process
+4. Record the values for each of the 6 colors
 
-For each of the 6 colors:
-1. Hold a sticker of that color in front of the camera
-2. Adjust the trackbars until only that color appears in the mask
-3. Note down the HSV ranges that isolate the color
-4. Repeat for all colors
+5. Update the `classify_hue()` function in `Main.py` or `app.py` with your new ranges
 
-### Updating HSV Values
+### Tips for Better Detection
 
-Edit the `classify_hue()` function in:
-- `app.py` (for web version)
-- `Main.py` (for desktop version)
-
-Example structure:
-```python
-def classify_hue(h, s, v):
-    # White: Low saturation
-    if s <= 80 and v >= 50:
-        return "W"
-    
-    # Red: Hue wraps around 0/180
-    elif ((h >= 0 and h <= 4) or (h >= 165 and h <= 180)) and s > 80:
-        return "R"
-    
-    # Orange
-    elif h >= 5 and h <= 20 and s > 80:
-        return "O"
-    
-    # Yellow
-    elif h >= 21 and h <= 45 and s > 80:
-        return "Y"
-    
-    # Green
-    elif h >= 46 and h <= 90 and s > 80:
-        return "G"
-    
-    # Blue
-    elif h >= 91 and h <= 140 and s > 80:
-        return "B"
-    
-    else:
-        return "O"  # Fallback
-```
+- Use consistent, diffused lighting (avoid harsh shadows)
+- Position the cube face parallel to the camera
+- Ensure the webcam is in focus
+- Avoid reflective surfaces behind the cube
+- Clean your cube stickers if worn or dirty
 
 ---
 
-## Project Architecture
+## Cube Notation
 
-```
-RubiksCV/
-├── app.py              # Flask web server with REST API
-├── Main.py             # Desktop scanner and solver
-├── State.py            # Desktop cube state visualizer
-├── Calibrator.py       # HSV calibration utility
-├── requirements.txt    # Python dependencies
-├── Procfile            # Heroku deployment configuration
-├── runtime.txt         # Python version specification
-├── static/             # Web frontend assets
-│   ├── index.html      # Main HTML page
-│   ├── style.css       # Stylesheet
-│   └── app.js          # Frontend JavaScript
-└── Resources/          # Desktop version assets
-    ├── Colors/         # Sticker tile images (PNG)
-    │   ├── white.png
-    │   ├── yellow.png
-    │   ├── red.png
-    │   ├── orange.png
-    │   ├── green.png
-    │   └── blue.png
-    └── *.png           # Move arrow overlays (R.png, U'.png, etc.)
-```
+Standard Rubik's Cube notation used in solutions:
 
-### File Descriptions
+| Move | Description |
+|------|-------------|
+| U | Up face clockwise (90 degrees) |
+| U' | Up face counter-clockwise |
+| U2 | Up face 180 degrees |
+| R | Right face clockwise |
+| R' | Right face counter-clockwise |
+| F | Front face clockwise |
+| F' | Front face counter-clockwise |
+| D | Down face clockwise |
+| D' | Down face counter-clockwise |
+| L | Left face clockwise |
+| L' | Left face counter-clockwise |
+| B | Back face clockwise |
+| B' | Back face counter-clockwise |
 
-| File | Purpose |
-|------|---------|
-| `app.py` | Flask application with endpoints for color classification (`/api/classify-colors`), solving (`/api/solve`), and applying moves (`/api/apply-move`) |
-| `Main.py` | Desktop application that handles webcam capture, face scanning, solution generation, and move guidance with arrow overlays |
-| `State.py` | Socket server that receives cube state updates and renders a 2D unfolded view of the cube |
-| `Calibrator.py` | Utility with trackbars to find optimal HSV ranges for your cube and lighting |
+**Face Orientation:**
+- Hold the cube with one face toward you (Front)
+- Up is the top face
+- Right is to your right
+- Clockwise means turning as if looking at that face directly
+
+---
+
+## Troubleshooting
+
+### Colors are detected incorrectly
+
+**Problem:** The scanner shows wrong colors for stickers.
+
+**Solutions:**
+1. Improve lighting - use bright, even light without shadows
+2. Run `Calibrator.py` to tune HSV ranges for your environment
+3. Ensure the cube fills most of the camera frame
+4. Check that your webcam is producing a clear, focused image
+
+### "Could not solve" error
+
+**Problem:** The solver returns an error after scanning.
+
+**Solutions:**
+1. Verify each face was scanned correctly (check terminal output)
+2. Ensure the center sticker of each face is a different color
+3. Rescan any faces that show incorrect colors
+4. Make sure your cube is actually solvable (not disassembled incorrectly)
+
+### Webcam not detected
+
+**Problem:** The application cannot access the camera.
+
+**Solutions:**
+1. Check that no other application is using the webcam
+2. Verify webcam permissions in your OS settings
+3. Try a different USB port (for external webcams)
+4. For the web version, ensure you're using HTTPS or localhost
+
+### State Viewer not updating (Desktop)
+
+**Problem:** The State.py window doesn't show cube updates.
+
+**Solutions:**
+1. Start State.py before Main.py
+2. Ensure port 9999 is not blocked by a firewall
+3. Check the terminal for connection errors
+
+### Web version camera not working
+
+**Problem:** Browser doesn't show camera feed.
+
+**Solutions:**
+1. Allow camera permissions when prompted
+2. Use Chrome, Firefox, or Edge (Safari may have issues)
+3. For remote access, HTTPS is required for camera access
+4. Check browser console for errors (F12 > Console)
+
+---
+
+## Technologies Used
+
+| Technology | Purpose |
+|------------|---------|
+| **Python 3.10+** | Core programming language |
+| **OpenCV** | Image capture, processing, and display |
+| **NumPy** | Efficient array operations for image data |
+| **Flask** | Web server and REST API |
+| **Kociemba** | Two-phase Rubik's Cube solving algorithm |
+| **Socket** | Inter-process communication (desktop version) |
+| **HTML/CSS/JS** | Web frontend interface |
 
 ---
 
@@ -320,7 +431,7 @@ RubiksCV/
 
 ### POST /api/classify-colors
 
-Classifies colors from a captured image.
+Analyzes an image and returns detected colors.
 
 **Request Body:**
 ```json
@@ -333,25 +444,22 @@ Classifies colors from a captured image.
 **Response:**
 ```json
 {
-  "colors": ["W", "W", "W", "W", "W", "W", "W", "W", "W"],
-  "positions": [{"x": 160, "y": 120}, ...]
+  "colors": ["W", "W", "R", "G", "W", "B", "O", "Y", "W"],
+  "positions": [{"x": 100, "y": 100}, ...]
 }
 ```
 
 ### POST /api/solve
 
-Generates solution for scanned cube.
+Solves the cube and returns the solution.
 
 **Request Body:**
 ```json
 {
   "cube_faces": {
-    "U": ["W","W","W","W","W","W","W","W","W"],
-    "R": ["R","R","R","R","R","R","R","R","R"],
-    "F": ["G","G","G","G","G","G","G","G","G"],
-    "D": ["Y","Y","Y","Y","Y","Y","Y","Y","Y"],
-    "L": ["O","O","O","O","O","O","O","O","O"],
-    "B": ["B","B","B","B","B","B","B","B","B"]
+    "U": ["W", "W", "W", ...],
+    "R": ["R", "R", "R", ...],
+    ...
   }
 }
 ```
@@ -362,18 +470,18 @@ Generates solution for scanned cube.
   "solution": "R U R' U'",
   "moves": ["R", "U", "R'", "U'"],
   "expanded_moves": ["R", "U", "R'", "U'"],
-  "cube_string": "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"
+  "cube_string": "UUUUUUUUU..."
 }
 ```
 
 ### POST /api/apply-move
 
-Applies a move and returns updated state.
+Applies a move to a cube state.
 
 **Request Body:**
 ```json
 {
-  "state": { "U": [...], "R": [...], ... },
+  "state": {"U": [...], "R": [...], ...},
   "move": "R"
 }
 ```
@@ -381,68 +489,23 @@ Applies a move and returns updated state.
 **Response:**
 ```json
 {
-  "state": { "U": [...], "R": [...], ... }
+  "state": {"U": [...], "R": [...], ...}
 }
 ```
 
 ---
 
-## Troubleshooting
-
-### Colors are being misclassified
-
-1. Ensure good, consistent lighting (avoid shadows)
-2. Run `Calibrator.py` to find correct HSV ranges
-3. Update the `classify_hue()` function with your values
-4. Avoid reflective cube surfaces or use a matte cube
-
-### Webcam not working (Web Version)
-
-1. Ensure browser has camera permissions
-2. Try a different browser (Chrome recommended)
-3. Check if another application is using the camera
-4. For HTTPS deployment, ensure valid SSL certificate
-
-### Socket connection refused (Desktop Version)
-
-1. Start `State.py` before `Main.py`
-2. Ensure port 9999 is not blocked by firewall
-3. If port is in use, modify PORT in both files
-
-### "Could not solve" error
-
-This typically means the scanned cube state is invalid:
-1. Re-scan all faces carefully
-2. Ensure consistent cube orientation
-3. Check that each color appears exactly 9 times
-4. Verify center stickers match the face assignments
-
-### Solution doesn't work on physical cube
-
-1. Ensure you're holding the cube with correct orientation (White up, Green front)
-2. Follow moves exactly as shown
-3. Press SPACE only after completing each physical move
-4. Double-check your scanned colors match the actual cube
-
----
-
-## Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| Python 3.8+ | Core programming language |
-| OpenCV | Image capture and processing |
-| NumPy | Numerical operations for image data |
-| Flask | Web server framework |
-| Flask-CORS | Cross-origin resource sharing |
-| kociemba | Rubik's Cube solving algorithm |
-| Gunicorn | Production WSGI server |
-| HTML/CSS/JS | Web frontend |
-| Socket | Desktop inter-process communication |
-| Pickle | State serialization |
-
----
-
 ## License
 
-MIT License - Feel free to use, modify, and distribute this project.
+MIT License - feel free to use, modify, and distribute.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
