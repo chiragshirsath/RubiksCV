@@ -7,41 +7,19 @@ import pickle
 
 
 def classify_hue(h, s, v):
-    # WHITE: S <= 80
-    # Allows "yellowish" white to pass as White.
     if s <= 80 and v >= 50:
         return "W"
-
-    # RED: STOPPED AT 4.
-    # Your Orange is 8. If Red went to 10, it would eat your Orange.
-    # Stopping at 4 forces your Orange to be recognized correctly.
     elif ((h >= 0 and h <= 4) or (h >= 165 and h <= 180)) and s > 80:
         return "R"
-
-    # ORANGE: STARTS AT 5.
-    # Your Orange is 8. This range (5 to 20) captures it perfectly.
     elif h >= 5 and h <= 20 and s > 80:
         return "O"
-
-    # YELLOW: 21 to 45.
-    # Your Yellow is 33. This places it right in the middle.
-    # We expanded the top end to 45 to stop it from looking Green.
     elif h >= 21 and h <= 45 and s > 80:
         return "Y"
-
-    # GREEN: STARTS AT 46.
-    # Standard Green is ~60. By starting at 46, we keep it far away 
-    # from your Yellow (33).
     elif h >= 46 and h <= 90 and s > 80:
         return "G"
-
-    # BLUE: STARTS AT 91.
-    # Catches your Sky Blue (which is usually around 95-100).
     elif h >= 91 and h <= 140 and s > 80:
         return "B"
-
     else:
-        # Fallback
         return "O"
 
 def get_position_for_move(move, frame_size, image_size):

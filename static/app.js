@@ -67,20 +67,29 @@ renderManualFaceEditor();
 
 async function startCamera() {
     try {
+        // Try to get the back camera first
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
-                facingMode: 'user',
-                width: { ideal: 640 },
+                facingMode: { exact: "environment" },
+                width: { ideal: 640 }, 
                 height: { ideal: 480 }
             } 
         });
-        const video = document.getElementById('video');
-        video.srcObject = stream;
-        document.getElementById('startCamera').style.display = 'none';
-        document.getElementById('stopCamera').style.display = 'inline-block';
     } catch (err) {
-        alert('Error accessing camera: ' + err.message);
+        console.log("Back camera not found, falling back to any camera...");
+        // Fallback: Opens whatever camera is available (Webcam on laptop)
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 640 }, 
+                height: { ideal: 480 }
+            } 
+        });
     }
+    
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    document.getElementById('startCamera').style.display = 'none';
+    document.getElementById('stopCamera').style.display = 'inline-block';
 }
 
 function stopCamera() {
