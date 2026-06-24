@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <numeric>
+#include <cstdint>
 
 using namespace std;
 
