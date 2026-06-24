@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import base64
 import copy
-import kociemba
+import subprocess
 import os
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -211,8 +211,15 @@ def solve():
         color_to_face = {cube_faces[face][4]: face for face in face_order}
         cube_string = ''.join(color_to_face.get(color, '?') for face in face_order for color in cube_faces[face])
         
-        # Solve using kociemba
-        solution = kociemba.solve(cube_string)
+        # Solve using custom C++ solver via subprocess
+        try:
+            result = subprocess.check_output(['./rubiks_solver_cli', cube_string], stderr=subprocess.STDOUT)
+            solution = result.decode('utf-8').strip()
+        except subprocess.CalledProcessError as e:
+            return jsonify({'error': f"C++ Solver Error: {e.output.decode('utf-8')}"}), 500
+        except FileNotFoundError:
+            return jsonify({'error': 'Solver executable not found. Did you compile it using make?'}), 500
+        
         moves = solution.strip().split()
         
         # Expand moves (handle B moves and double moves)
