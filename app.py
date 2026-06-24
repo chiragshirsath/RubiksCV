@@ -216,7 +216,16 @@ def solve():
             result = subprocess.check_output(['./rubiks_solver_cli', cube_string], stderr=subprocess.STDOUT)
             solution = result.decode('utf-8').strip()
         except subprocess.CalledProcessError as e:
-            return jsonify({'error': f"C++ Solver Error: {e.output.decode('utf-8')}"}), 500
+            err_output = e.output.decode('utf-8').strip()
+            if "Cannot identify" in err_output or "Invalid" in err_output:
+                friendly_err = (
+                    "Invalid cube state! The camera likely misread a color due to lighting "
+                    "(e.g., confusing Orange and Red). Please look at the 2D Cube State map "
+                    "carefully, and use the 'Manual Mode' tab to fix any incorrect colors "
+                    "before hitting Solve."
+                )
+                return jsonify({'error': friendly_err}), 400
+            return jsonify({'error': f"C++ Solver Error: {err_output}"}), 500
         except FileNotFoundError:
             return jsonify({'error': 'Solver executable not found. Did you compile it using make?'}), 500
         
