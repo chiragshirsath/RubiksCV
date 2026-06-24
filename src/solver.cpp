@@ -350,12 +350,12 @@ array<int, 12> ud_slice_perm_from_coord(int val) {
 // ---------------------------------------------------------------------------
 // Tables
 // ---------------------------------------------------------------------------
-uint16_t co_move[2187][18];
-uint16_t eo_move[2048][18];
-uint16_t uds_move[495][18];
-uint16_t cp_move[40320][18];
-uint16_t ep_move[40320][18];
-uint16_t usp_move[24][18];
+uint16_t co_move_tbl[2187][18];
+uint16_t eo_move_tbl[2048][18];
+uint16_t uds_move_tbl[495][18];
+uint16_t cp_move_tbl[40320][18];
+uint16_t ep_move_tbl[40320][18];
+uint16_t usp_move_tbl[24][18];
 
 uint8_t co_uds_prune[2187 * 495];
 uint8_t eo_uds_prune[2048 * 495];
@@ -367,42 +367,42 @@ void build_move_tables() {
         auto co = corner_orientation_from_coord(i);
         CubieCube c; c.co = co;
         for(int m=0; m<18; ++m) {
-            co_move[i][m] = corner_orientation_coord(c.multiply(MOVE_CUBE[m]).co);
+            co_move_tbl[i][m] = corner_orientation_coord(c.multiply(MOVE_CUBE[m]).co);
         }
     }
     for(int i=0; i<2048; ++i) {
         auto eo = edge_orientation_from_coord(i);
         CubieCube c; c.eo = eo;
         for(int m=0; m<18; ++m) {
-            eo_move[i][m] = edge_orientation_coord(c.multiply(MOVE_CUBE[m]).eo);
+            eo_move_tbl[i][m] = edge_orientation_coord(c.multiply(MOVE_CUBE[m]).eo);
         }
     }
     for(int i=0; i<495; ++i) {
         auto ep = ud_slice_from_coord(i);
         CubieCube c; c.ep = ep;
         for(int m=0; m<18; ++m) {
-            uds_move[i][m] = ud_slice_coord(c.multiply(MOVE_CUBE[m]).ep);
+            uds_move_tbl[i][m] = ud_slice_coord(c.multiply(MOVE_CUBE[m]).ep);
         }
     }
     for(int i=0; i<40320; ++i) {
         auto cp = corner_perm_from_coord(i);
         CubieCube c; c.cp = cp;
         for(int m=0; m<18; ++m) {
-            cp_move[i][m] = corner_perm_coord(c.multiply(MOVE_CUBE[m]).cp);
+            cp_move_tbl[i][m] = corner_perm_coord(c.multiply(MOVE_CUBE[m]).cp);
         }
     }
     for(int i=0; i<40320; ++i) {
         auto ep = ud_edge_perm_from_coord(i);
         CubieCube c; c.ep = ep;
         for(int m=0; m<18; ++m) {
-            ep_move[i][m] = ud_edge_perm_coord(c.multiply(MOVE_CUBE[m]).ep);
+            ep_move_tbl[i][m] = ud_edge_perm_coord(c.multiply(MOVE_CUBE[m]).ep);
         }
     }
     for(int i=0; i<24; ++i) {
         auto ep = ud_slice_perm_from_coord(i);
         CubieCube c; c.ep = ep;
         for(int m=0; m<18; ++m) {
-            usp_move[i][m] = ud_slice_perm_coord(c.multiply(MOVE_CUBE[m]).ep);
+            usp_move_tbl[i][m] = ud_slice_perm_coord(c.multiply(MOVE_CUBE[m]).ep);
         }
     }
 }
@@ -439,10 +439,10 @@ void build_all_pruning_tables() {
     vector<int> moves18(18); iota(moves18.begin(), moves18.end(), 0);
     vector<int> moves10(PHASE2_MOVES, PHASE2_MOVES + 10);
     
-    build_pruning_table(co_uds_prune, 2187, 495, co_move, uds_move, moves18);
-    build_pruning_table(eo_uds_prune, 2048, 495, eo_move, uds_move, moves18);
-    build_pruning_table(cp_usp_prune, 40320, 24, cp_move, usp_move, moves10);
-    build_pruning_table(ep_usp_prune, 40320, 24, ep_move, usp_move, moves10);
+    build_pruning_table(co_uds_prune, 2187, 495, co_move_tbl, uds_move_tbl, moves18);
+    build_pruning_table(eo_uds_prune, 2048, 495, eo_move_tbl, uds_move_tbl, moves18);
+    build_pruning_table(cp_usp_prune, 40320, 24, cp_move_tbl, usp_move_tbl, moves10);
+    build_pruning_table(ep_usp_prune, 40320, 24, ep_move_tbl, usp_move_tbl, moves10);
 }
 
 // ---------------------------------------------------------------------------
@@ -524,7 +524,7 @@ public:
         for(int m=0; m<18; ++m) {
             if(!can_follow(m, last_move)) continue;
             sol.push_back(m);
-            if(phase1_search(co_move[co][m], eo_move[eo][m], uds_move[uds][m], depth+1, max_depth, m, sol)) return true;
+            if(phase1_search(co_move_tbl[co][m], eo_move_tbl[eo][m], uds_move_tbl[uds][m], depth+1, max_depth, m, sol)) return true;
             sol.pop_back();
         }
         return false;
@@ -537,7 +537,7 @@ public:
         for(int m : PHASE2_MOVES) {
             if(!can_follow(m, last_move)) continue;
             sol.push_back(m);
-            if(phase2_search(cp_move[cp][m], ep_move[ep][m], usp_move[usp][m], depth+1, max_depth, m, sol)) return true;
+            if(phase2_search(cp_move_tbl[cp][m], ep_move_tbl[ep][m], usp_move_tbl[usp][m], depth+1, max_depth, m, sol)) return true;
             sol.pop_back();
         }
         return false;
