@@ -3,118 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rubik's Cube Solver</title>
+    <title>Rubik's Cube Solver — AI-Powered</title>
+    <meta name="description" content="Scan your Rubik's Cube with your camera and get step-by-step solving instructions powered by a C++ Kociemba engine.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🧊 Rubik's Cube Solver</h1>
-        
-        <div class="main-content">
-            <div class="left-panel">
-                <div class="mode-toggle">
-                    <button id="cameraModeBtn" class="mode-btn active">📷 Camera Mode</button>
-                    <button id="manualModeBtn" class="mode-btn">✏️ Manual Mode</button>
-                </div>
-                
-                <div class="camera-section" id="cameraSection">
-                    <video id="video" autoplay playsinline></video>
-                    <canvas id="canvas" style="display: none;"></canvas>
-                    <div class="controls">
-                        <button id="startCamera" class="btn btn-primary">Start Camera</button>
-                        <button id="stopCamera" class="btn btn-secondary" style="display: none;">Stop Camera</button>
+    <div class="app">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🧊 Rubik's Cube Solver</h1>
+        </header>
+
+        <!-- Step Indicator -->
+        <nav class="step-indicator" id="stepIndicator">
+            <button class="step active" data-step="1" id="stepBtn1">
+                <span class="step-number">1</span>
+                <span class="step-label">Scan</span>
+            </button>
+            <div class="step-connector"></div>
+            <button class="step" data-step="2" id="stepBtn2">
+                <span class="step-number">2</span>
+                <span class="step-label">Review</span>
+            </button>
+            <div class="step-connector"></div>
+            <button class="step" data-step="3" id="stepBtn3">
+                <span class="step-number">3</span>
+                <span class="step-label">Solve</span>
+            </button>
+        </nav>
+
+        <!-- ==================== STEP 1: SCAN ==================== -->
+        <section class="step-content active" id="step1">
+            <div class="scan-layout">
+                <!-- Left: Camera + Controls -->
+                <div class="scan-left">
+                    <div class="mode-toggle">
+                        <button id="cameraModeBtn" class="mode-btn active">📷 Camera</button>
+                        <button id="manualModeBtn" class="mode-btn">✏️ Manual</button>
                     </div>
-                </div>
-                
-                <div class="scan-section" id="scanSection">
-                    <h2>Scan Faces</h2>
-                    <div style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.9em; line-height: 1.4;">
-                        <strong>⚠️ How to hold the cube for the camera:</strong><br>
-                        • <strong>F, R, L, B faces:</strong> Keep the White center pointing UP.<br>
-                        • <strong>U (White) face:</strong> Tilt so the Blue center points UP.<br>
-                        • <strong>D (Yellow) face:</strong> Tilt so the Green center points UP.<br>
-                        <em>(If you rotate a face incorrectly, the solver will fail to identify the corners!)</em>
-                    </div>
-                    <div class="face-buttons">
-                        <button class="face-btn" data-face="U">U (Up)</button>
-                        <button class="face-btn" data-face="R">R (Right)</button>
-                        <button class="face-btn" data-face="F">F (Front)</button>
-                        <button class="face-btn" data-face="D">D (Down)</button>
-                        <button class="face-btn" data-face="L">L (Left)</button>
-                        <button class="face-btn" data-face="B">B (Back)</button>
-                    </div>
-                    <div class="scanned-faces">
-                        <p>Scanned: <span class="scanned-count">0</span>/6</p>
-                        <div class="scanned-list"></div>
-                    </div>
-                </div>
-                
-                <div class="manual-editor" id="manualEditor" style="display: none;">
-                    <h2>Manual Color Editor</h2>
-                    <div class="color-selector">
-                        <p>Select Color:</p>
-                        <div class="color-buttons">
-                            <button class="color-btn active" data-color="W" style="background: #ffffff; border: 2px solid #333;">W</button>
-                            <button class="color-btn" data-color="Y" style="background: #ffeb3b;">Y</button>
-                            <button class="color-btn" data-color="R" style="background: #f44336;">R</button>
-                            <button class="color-btn" data-color="O" style="background: #ff9800;">O</button>
-                            <button class="color-btn" data-color="G" style="background: #4caf50;">G</button>
-                            <button class="color-btn" data-color="B" style="background: #2196f3;">B</button>
+
+                    <!-- Camera View -->
+                    <div class="camera-container" id="cameraContainer">
+                        <div class="camera-wrapper" id="cameraWrapper">
+                            <video id="video" autoplay playsinline></video>
+                            <canvas id="canvas" style="display:none;"></canvas>
+                            <!-- 3x3 Grid Overlay -->
+                            <div class="grid-overlay" id="gridOverlay"></div>
+                            <!-- Scan flash -->
+                            <div class="scan-flash" id="scanFlash"></div>
+                            <!-- Placeholder -->
+                            <div class="camera-placeholder" id="cameraPlaceholder">
+                                <span class="placeholder-icon">📷</span>
+                                <p>Start Camera to begin scanning</p>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button id="startCamera" class="btn btn-glow">▶ Start Camera</button>
+                            <button id="stopCamera" class="btn btn-outline" style="display:none;">⏹ Stop</button>
                         </div>
                     </div>
-                    <div class="face-selector">
-                        <p>Select Face to Edit:</p>
-                        <div class="face-tabs">
-                            <button class="face-tab active" data-face="U">U (Up)</button>
-                            <button class="face-tab" data-face="R">R (Right)</button>
-                            <button class="face-tab" data-face="F">F (Front)</button>
-                            <button class="face-tab" data-face="D">D (Down)</button>
-                            <button class="face-tab" data-face="L">L (Left)</button>
-                            <button class="face-tab" data-face="B">B (Back)</button>
+
+                    <!-- Manual Editor -->
+                    <div class="manual-container" id="manualContainer" style="display:none;">
+                        <div class="manual-face-tabs" id="manualFaceTabs">
+                            <button class="face-tab active" data-face="U">U</button>
+                            <button class="face-tab" data-face="R">R</button>
+                            <button class="face-tab" data-face="F">F</button>
+                            <button class="face-tab" data-face="D">D</button>
+                            <button class="face-tab" data-face="L">L</button>
+                            <button class="face-tab" data-face="B">B</button>
+                        </div>
+                        <div class="color-palette" id="colorPalette">
+                            <button class="color-swatch active" data-color="W" title="White"></button>
+                            <button class="color-swatch" data-color="Y" title="Yellow"></button>
+                            <button class="color-swatch" data-color="R" title="Red"></button>
+                            <button class="color-swatch" data-color="O" title="Orange"></button>
+                            <button class="color-swatch" data-color="G" title="Green"></button>
+                            <button class="color-swatch" data-color="B" title="Blue"></button>
+                        </div>
+                        <div class="manual-grid-wrapper">
+                            <div class="manual-grid" id="manualGrid"></div>
+                        </div>
+                        <div class="manual-actions">
+                            <button id="clearFaceBtn" class="btn btn-outline btn-small">Clear Face</button>
+                            <button id="clearAllBtn" class="btn btn-outline btn-small">Clear All</button>
                         </div>
                     </div>
-                    <div class="manual-face-editor" id="manualFaceEditor">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                    <div class="manual-actions">
-                        <button id="clearFaceBtn" class="btn btn-secondary">Clear Current Face</button>
-                        <button id="clearAllBtn" class="btn btn-secondary">Clear All Faces</button>
+
+                    <!-- Face Capture Buttons -->
+                    <div class="face-strip" id="faceStrip">
+                        <span class="face-strip-label">Click to capture face:</span>
+                        <button class="face-chip" data-face="U"><span class="chip-dot" style="background:#fff;border:1px solid #999;"></span>U</button>
+                        <button class="face-chip" data-face="R"><span class="chip-dot" style="background:#E53935;"></span>R</button>
+                        <button class="face-chip" data-face="F"><span class="chip-dot" style="background:#43A047;"></span>F</button>
+                        <button class="face-chip" data-face="D"><span class="chip-dot" style="background:#FFD600;border:1px solid #999;"></span>D</button>
+                        <button class="face-chip" data-face="L"><span class="chip-dot" style="background:#FF6D00;"></span>L</button>
+                        <button class="face-chip" data-face="B"><span class="chip-dot" style="background:#1E88E5;"></span>B</button>
                     </div>
                 </div>
-                
-                <div class="solve-section">
-                    <div class="scanned-faces">
-                        <p>Faces Set: <span class="scanned-count">0</span>/6</p>
-                        <div class="scanned-list"></div>
+
+                <!-- Right: Scanned Previews -->
+                <div class="scan-right">
+                    <div class="scan-status">
+                        <h3>Scanned Faces</h3>
+                        <span class="scan-count" id="scanCount">0 / 6</span>
                     </div>
-                    <button id="solveBtn" class="btn btn-success" disabled>Solve Cube</button>
+                    <div class="face-thumbnails" id="faceThumbnails">
+                        <!-- JS renders 6 thumbnail slots -->
+                    </div>
+                    <button id="reviewBtn" class="btn btn-glow btn-wide" disabled>
+                        Review & Solve →
+                    </button>
                 </div>
             </div>
-            
-            <div class="right-panel">
-                <div class="cube-viewer">
-                    <h2>Cube State</h2>
-                    <div id="cubeDisplay"></div>
-                </div>
-                
-                <div class="solution-section" id="solutionSection" style="display: none;">
-                    <h2>Solution</h2>
-                    <div id="solutionText"></div>
-                    <div class="move-guidance">
-                        <h3>Current Move</h3>
-                        <div id="visualCubeContainer"></div>
-                        <div id="currentMove"></div>
-                        <div class="move-info">
-                            <div id="moveNumber"></div>
-                            <div id="moveDescription"></div>
-                        </div>
-                        <button id="nextMoveBtn" class="btn btn-primary btn-large">Next Move</button>
+        </section>
+
+        <!-- ==================== STEP 2: REVIEW ==================== -->
+        <section class="step-content" id="step2">
+            <div class="review-layout">
+                <h2 class="section-title">Verify Your Cube</h2>
+                <p class="section-sub">Make sure every color matches your physical cube. Click any sticker to change it.</p>
+
+                <div class="review-net-area">
+                    <div class="review-palette" id="reviewPalette" style="display:none;">
+                        <button class="color-swatch active" data-color="W" title="White"></button>
+                        <button class="color-swatch" data-color="Y" title="Yellow"></button>
+                        <button class="color-swatch" data-color="R" title="Red"></button>
+                        <button class="color-swatch" data-color="O" title="Orange"></button>
+                        <button class="color-swatch" data-color="G" title="Green"></button>
+                        <button class="color-swatch" data-color="B" title="Blue"></button>
                     </div>
+                    <div class="review-cube-net" id="reviewCubeNet"></div>
+                </div>
+
+                <div class="review-actions">
+                    <button id="backToScanBtn" class="btn btn-outline">← Back to Scan</button>
+                    <button id="solveBtn" class="btn btn-glow btn-wide">🚀 Solve Cube</button>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- ==================== STEP 3: SOLVE ==================== -->
+        <section class="step-content" id="step3">
+            <div class="solve-layout">
+                <!-- Progress Bar -->
+                <div class="solve-progress">
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">Move 0 / 0</span>
+                </div>
+
+                <div class="solve-main">
+                    <!-- Left: Cube State -->
+                    <div class="solve-cube-panel glass-card">
+                        <h3>Cube State</h3>
+                        <div class="solve-cube-net" id="solveCubeNet"></div>
+                    </div>
+
+                    <!-- Right: Move Guidance -->
+                    <div class="solve-move-panel glass-card">
+                        <div class="move-card" id="moveCard">
+                            <div class="move-header">
+                                <span class="move-badge" id="moveBadge">—</span>
+                                <span class="move-label" id="moveLabel">Ready</span>
+                            </div>
+                            <div class="move-arrow-area" id="moveArrowArea">
+                                <p class="move-hint">Press Solve to begin</p>
+                            </div>
+                            <p class="move-desc" id="moveDesc" style="margin-top: 20px; font-weight: 500; font-size: 1.2rem;"></p>
+                            <div style="display: flex; gap: 15px; width: 100%; margin-top: 20px;">
+                                <button id="prevMoveBtn" class="btn btn-large" style="flex: 1; background: #333;" disabled>
+                                    ← Prev
+                                </button>
+                                <button id="nextMoveBtn" class="btn btn-glow btn-large" style="flex: 2;">
+                                    Next Move →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Move List -->
+                <div class="move-list-container">
+                    <div class="move-list" id="moveList"></div>
+                </div>
+
+                <button id="startOverBtn" class="btn btn-outline btn-small">← Start Over</button>
+            </div>
+        </section>
     </div>
-    
+
     <script src="app.js"></script>
 </body>
 </html>

@@ -15,8 +15,8 @@ A high-performance Rubik's Cube solver utilizing a **Python/Flask Web Interface*
   - Python OpenCV processes webcam feeds in the browser.
   - Live grid rendering and HSV color classification (White, Yellow, Red, Orange, Green, Blue).
 - **Interactive Playback**:
-  - Overlays movement arrows onto the camera feed in the browser.
-  - Advance step-by-step using on-screen buttons to solve the cube.
+  - Step-by-step 2D visualizer that dynamically generates precise SVG arrows showing exactly which slice to turn.
+  - Interactive "Next" and "Prev" controls with complete state history to guide you through the optimal solution without confusion.
 
 ---
 

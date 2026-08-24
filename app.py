@@ -108,10 +108,18 @@ def cycle_edges(state, faces, indices, turns=1):
 
 def apply_move(state, move):
     """Apply a move to the cube state"""
+    state = copy.deepcopy(state)
+    if move == 'TURN_BACK':
+        # Apply y2 rotation
+        state['F'], state['B'] = state['B'], state['F']
+        state['R'], state['L'] = state['L'], state['R']
+        state['U'] = rotate_face(state['U'], 2)
+        state['D'] = rotate_face(state['D'], 2)
+        return state
+
     face = move[0]
     modifier = move[1:] if len(move) > 1 else ''
     turns = {'': 1, "'": 3, '2': 2}[modifier]
-    state = copy.deepcopy(state)
     state[face] = rotate_face(state[face], turns)
     if face == 'U':
         state = cycle_edges(state, ['B', 'R', 'F', 'L'], [[0,1,2]]*4, turns)
