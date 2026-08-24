@@ -162,7 +162,7 @@ function goToStep(step) {
     });
 
     if (step === 1) {
-        if (currentMode === 'camera') startCamera();
+        // Do not auto-start camera
         updateScanUI();
     } else {
         stopCamera();
@@ -193,7 +193,7 @@ function switchMode(mode) {
     document.getElementById('manualContainer').style.display = mode === 'manual' ? 'block' : 'none';
 
     if (mode === 'camera') {
-        startCamera();
+        // Do not auto-start camera
     } else {
         stopCamera();
         switchManualFace(selectedFace);

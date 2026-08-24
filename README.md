@@ -63,6 +63,22 @@ pip install -r requirements.txt
 
 ---
 
+## Screenshots
+
+### 1. Scan (Camera or Manual)
+Capture all 6 faces of the Rubik's Cube using your webcam or click to input manually.
+![Scan Phase](docs/scan_camera.png)
+
+### 2. Review
+Verify the captured colors against your physical cube.
+![Review Phase](docs/review.png)
+
+### 3. Solve
+Follow the dynamically generated SVG arrows perfectly mapped to each face slice.
+![Solve Phase](docs/solve_move1.png)
+
+---
+
 ## How to Run & Use
 
 Start the Flask web server:
@@ -73,9 +89,7 @@ Start the Flask web server:
 
 ### Using the App
 1. Open your browser to `http://localhost:5001`.
-2. Allow camera permissions.
-3. Hold the Rubik's Cube in front of the camera, aligning the face with the 3x3 grid dots.
-4. Click the on-screen buttons (`U`, `R`, `F`, `D`, `L`, `B`) to capture each face.
-5. Once all 6 faces are scanned successfully, click **Solve Cube**.
-6. The Python backend will invoke the C++ engine to generate the solution instantly.
-7. Follow the visual arrow overlays on the web interface to solve the cube!
+2. **Scan Phase**: Click **▶ Start Camera** to use your webcam, or switch to **Manual Mode** to click the grid and fill colors by hand.
+3. Once all 6 faces are captured successfully, click **Solve Cube**.
+4. **Review Phase**: Verify the colors. The backend instantly calculates the most optimal path using the C++ Two-Phase algorithm!
+5. **Solve Phase**: Follow the beautiful dynamic SVG arrows to solve your cube step-by-step. Use the **Prev** and **Next Move** buttons to navigate through the history easily!
