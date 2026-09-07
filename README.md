@@ -1,19 +1,19 @@
-# Rubik's Cube Solver (Hybrid Web + C++)
+# Rubik's Cube Solver (Hybrid AI + C++ Engine)
 
-A high-performance Rubik's Cube solver utilizing a **Python/Flask Web Interface** for OpenCV camera scanning and a blazing fast **C++17 Engine** for calculating the solution from scratch.
+A high-performance Rubik's Cube solver utilizing a **Python/Flask Web Interface**, a **PyTorch Convolutional Neural Network (CNN)** for edge computer vision, and a blazing fast **C++17 Engine** for calculating the mathematical solution.
 
 ---
 
 ## Key Features
 
-- **Hybrid Architecture**: Beautiful web interface combining HTML/JS with a Python Flask backend, while delegating heavy algorithmic lifting to a custom C++ subprocess.
+- **Deep Learning Computer Vision**: 
+  - Overcomes standard lighting limitations by replacing deterministic HSV thresholding with a custom-trained **PyTorch CNN**. 
+  - Dynamically crops webcam feeds, batches tensor inference, and robustly maps physical colors to digital states.
+- **Hybrid Architecture**: Beautiful framework-free web interface combining HTML/JS/SVG with a Python Flask backend, while delegating heavy algorithmic lifting to a custom C++ subprocess.
 - **From-Scratch Kociemba Solver (C++)**:
   - Custom implementation of Kociemba's Two-Phase algorithm in C++.
   - In-memory Phase 1 & Phase 2 pruning table generation via BFS on startup in under **0.3 seconds**.
-  - Iterative Deepening A* (IDA*) search for optimal moves.
-- **Web-based OpenCV Vision**:
-  - Python OpenCV processes webcam feeds in the browser.
-  - Live grid rendering and HSV color classification (White, Yellow, Red, Orange, Green, Blue).
+  - Iterative Deepening A* (IDA*) search for optimal moves (≤20 moves across 43 quintillion states).
 - **Interactive Playback**:
   - Step-by-step 2D visualizer that dynamically generates precise SVG arrows showing exactly which slice to turn.
   - Interactive "Next" and "Prev" controls with complete state history to guide you through the optimal solution without confusion.

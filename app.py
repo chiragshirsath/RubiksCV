@@ -6,82 +6,46 @@ import base64
 import copy
 import subprocess
 import os
+import torch
+import torchvision.transforms as transforms
+from PIL import Image
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 
-def classify_hue(h, s, v):
-    """Classify color based on HSV values - optimized for bright colors"""
-    # White: Low saturation, high value
-    if s <= 80 and v >= 50:
-        return "W"
-    
-    # Check colors in order of specificity to avoid misclassification
-    # Priority: Yellow > Orange > Red > Green > Blue
-    
-    # Yellow: Hue 18-32, MUST have very high value to distinguish from green
-    # Yellow is the brightest color - use strict value check
-    if h >= 18 and h <= 32:
-        if v > 180:  # Very bright - definitely yellow
-            return "Y"
-        elif v > 140 and s > 100:  # Bright with high saturation
-            return "Y"
-        elif v > 120 and s > 120:  # Still bright enough
-            return "Y"
-    
-    # Orange: Check BEFORE red to catch bright orange
-    # Very bright orange can have hue 0-7, use value to distinguish from red
-    if h >= 3 and h <= 19:
-        # If very bright (v > 180) and high saturation, it's bright orange
-        if v > 180 and s > 100:
-            return "O"
-        # Standard orange range
-        elif s > 80:
-            return "O"
-    
-    # Red: Very narrow range, and typically not as bright as orange
-    if (h >= 0 and h <= 2) or (h >= 170 and h <= 180):
-        if s > 80:
-            return "R"
-    # Edge case: hue 3-7 but not bright enough for orange
-    elif h >= 3 and h <= 7:
-        if v <= 180 and s > 80:  # Not bright enough, likely red
-            return "R"
-    
-    # Green: Hue 35-85, MUST have lower value than yellow
-    # If value is too high, it might be yellow misclassified
-    if h >= 35 and h <= 85:
-        if s > 80:
-            # If very bright, might be yellow - check value threshold
-            if v > 180:
-                # Too bright for green, might be yellow - but hue is wrong
-                # Check if it's in yellow-green boundary (33-34)
-                if h <= 34:
-                    return "Y"  # Yellow-green boundary
-                else:
-                    return "G"  # Probably green but very bright
-            else:
-                return "G"  # Normal green
-    
-    # Blue: Hue 86-130, high saturation
-    if h >= 86 and h <= 130 and s > 80:
-        return "B"
-    
-    # Fallback for edge cases
-    if s > 60:
-        if h >= 18 and h <= 34:
-            return "Y" if v > 100 else "G"
-        elif h >= 3 and h <= 24:
-            return "O"
-        elif (h >= 0 and h <= 2) or (h >= 170 and h <= 180):
-            return "R"
-        elif h >= 35 and h <= 85:
-            return "G"
-        elif h >= 86 and h <= 130:
-            return "B"
-    
-    # Default to white for low saturation colors
-    return "W"
+class StickerNet(torch.nn.Module):
+    def __init__(self):
+        super(StickerNet, self).__init__()
+        self.conv1 = torch.nn.Conv2d(3, 16, kernel_size=3, padding=1)
+        self.bn1 = torch.nn.BatchNorm2d(16)
+        self.conv2 = torch.nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.bn2 = torch.nn.BatchNorm2d(32)
+        self.pool = torch.nn.MaxPool2d(2, 2)
+        self.fc1 = torch.nn.Linear(32 * 8 * 8, 128)
+        self.dropout = torch.nn.Dropout(0.5)
+        self.fc2 = torch.nn.Linear(128, 6)
+
+    def forward(self, x):
+        x = self.pool(torch.nn.functional.relu(self.bn1(self.conv1(x))))
+        x = self.pool(torch.nn.functional.relu(self.bn2(self.conv2(x))))
+        x = x.view(x.size(0), -1)
+        x = torch.nn.functional.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
+
+device = torch.device("cpu")
+model = StickerNet()
+if os.path.exists("sticker_net.pth"):
+    model.load_state_dict(torch.load("sticker_net.pth", map_location=device))
+model.eval()
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+
+COLOR_MAP = {0: "W", 1: "Y", 2: "R", 3: "O", 4: "G", 5: "B"}
 
 def rotate_face(face, turns=1):
     """Rotate a face 90 degrees clockwise (turns times)"""
@@ -146,17 +110,14 @@ def resources(filename):
 
 @app.route('/api/classify-colors', methods=['POST'])
 def classify_colors():
-    """Classify colors from an image"""
+    """Classify colors from an image using PyTorch CNN"""
     try:
         data = request.json
         image_data = data.get('image')
-        debug = data.get('debug', False)  # Optional debug mode
         
-        # Remove data URL prefix
         if ',' in image_data:
             image_data = image_data.split(',')[1]
         
-        # Decode base64 image
         img_bytes = base64.b64decode(image_data)
         nparr = np.frombuffer(img_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -164,16 +125,14 @@ def classify_colors():
         if img is None:
             return jsonify({'error': 'Failed to decode image'}), 400
         
-        # Convert to HSV
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        height, width = hsv.shape[:2]
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        height, width = img_rgb.shape[:2]
         center_x, center_y = width // 2, height // 2
         
         GRID_SIZE = 3
         SPACING = min(width, height) // 4
         colors = []
         positions = []
-        hsv_values = [] if debug else None
         
         for i in range(GRID_SIZE):
             for j in range(GRID_SIZE):
@@ -182,25 +141,38 @@ def classify_colors():
                 x = max(0, min(width - 1, x))
                 y = max(0, min(height - 1, y))
                 
-                hsv_pixel = hsv[y, x]
-                h, s, v = hsv_pixel
-                h_int, s_int, v_int = int(h), int(s), int(v)
-                color = classify_hue(h_int, s_int, v_int)
+                # Crop a 32x32 square around the center point (x, y)
+                half_size = 16
+                y1 = max(0, y - half_size)
+                y2 = min(height, y + half_size)
+                x1 = max(0, x - half_size)
+                x2 = min(width, x + half_size)
+                
+                crop = img_rgb[y1:y2, x1:x2]
+                if crop.shape[0] != 32 or crop.shape[1] != 32:
+                    crop = cv2.resize(crop, (32, 32))
+                
+                pil_img = Image.fromarray(crop)
+                tensor = transform(pil_img).unsqueeze(0).to(device)
+                
+                with torch.no_grad():
+                    outputs = model(tensor)
+                    _, predicted = torch.max(outputs, 1)
+                    pred_idx = predicted.item()
+                    color = COLOR_MAP.get(pred_idx, "W")
+                
                 colors.append(color)
                 positions.append({'x': int(x), 'y': int(y)})
-                
-                if debug:
-                    hsv_values.append({'h': h_int, 's': s_int, 'v': v_int, 'color': color})
         
         result = {
             'colors': colors,
             'positions': positions
         }
-        if debug:
-            result['hsv_values'] = hsv_values
         
         return jsonify(result)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/solve', methods=['POST'])
