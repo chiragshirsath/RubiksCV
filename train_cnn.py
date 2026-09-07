@@ -8,16 +8,6 @@ from PIL import Image
 import random
 import os
 
-# Base colors (R, G, B) mapping
-COLORS = {
-    0: (255, 255, 255), # White
-    1: (255, 213, 0),   # Yellow
-    2: (183, 18, 52),   # Red
-    3: (255, 88, 0),    # Orange
-    4: (0, 155, 72),    # Green
-    5: (0, 70, 173)     # Blue
-}
-
 class SyntheticRubiksDataset(Dataset):
     def __init__(self, num_samples, transform=None):
         self.num_samples = num_samples
@@ -28,7 +18,6 @@ class SyntheticRubiksDataset(Dataset):
         self.generate_data()
 
     def apply_gradient_shadow(self, img_array):
-        # Apply a random gradient to simulate shadows
         h, w, _ = img_array.shape
         x = np.linspace(random.uniform(0.3, 1.0), random.uniform(0.3, 1.0), w)
         y = np.linspace(random.uniform(0.3, 1.0), random.uniform(0.3, 1.0), h)
@@ -39,13 +28,25 @@ class SyntheticRubiksDataset(Dataset):
     def generate_data(self):
         for _ in range(self.num_samples):
             label = random.randint(0, 5)
-            base_color = COLORS[label]
             
-            # Create base 32x32 image
-            img_array = np.full((32, 32, 3), base_color, dtype=np.float32)
+            # Base colors with wide variations to handle all cube types
+            if label == 0: # White (can be slightly off-white/gray)
+                c = (random.randint(180, 255), random.randint(180, 255), random.randint(180, 255))
+            elif label == 1: # Yellow (must not overlap with green/orange)
+                c = (random.randint(200, 255), random.randint(180, 255), random.randint(0, 80))
+            elif label == 2: # Red
+                c = (random.randint(150, 255), random.randint(0, 60), random.randint(0, 80))
+            elif label == 3: # Orange
+                c = (random.randint(200, 255), random.randint(80, 160), random.randint(0, 50))
+            elif label == 4: # Green (Light fluorescent green to dark green)
+                c = (random.randint(0, 120), random.randint(130, 255), random.randint(0, 100))
+            elif label == 5: # Blue
+                c = (random.randint(0, 80), random.randint(50, 150), random.randint(150, 255))
             
-            # Add random uniform noise
-            noise = np.random.normal(0, 15, (32, 32, 3))
+            img_array = np.full((32, 32, 3), c, dtype=np.float32)
+            
+            # Add noise
+            noise = np.random.normal(0, 20, (32, 32, 3))
             img_array = np.clip(img_array + noise, 0, 255)
             
             # Apply gradient shadow
@@ -81,8 +82,8 @@ class StickerNet(nn.Module):
         self.fc2 = nn.Linear(128, 6)
 
     def forward(self, x):
-        x = self.pool(torch.relu(self.bn1(self.conv1(x)))) # 32x32 -> 16x16
-        x = self.pool(torch.relu(self.bn2(self.conv2(x)))) # 16x16 -> 8x8
+        x = self.pool(torch.relu(self.bn1(self.conv1(x))))
+        x = self.pool(torch.relu(self.bn2(self.conv2(x))))
         x = x.view(x.size(0), -1)
         x = torch.relu(self.fc1(x))
         x = self.dropout(x)
@@ -90,16 +91,16 @@ class StickerNet(nn.Module):
         return x
 
 def train():
-    print("Generating synthetic dataset...")
-    # Heavy color jitter to simulate terrible webcams and white-balance issues
+    print("Generating updated synthetic dataset...")
+    # REMOVED hue jitter to prevent green shifting to yellow
     transform = transforms.Compose([
-        transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1),
+        transforms.ColorJitter(brightness=0.6, contrast=0.5, saturation=0.5, hue=0.02),
         transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     
-    train_dataset = SyntheticRubiksDataset(20000, transform=transform)
+    train_dataset = SyntheticRubiksDataset(25000, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
@@ -109,7 +110,7 @@ def train():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
-    epochs = 5
+    epochs = 6
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
