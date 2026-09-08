@@ -4,17 +4,33 @@ A high-performance Rubik's Cube solver utilizing a **Python/Flask Web Interface*
 
 ---
 
-## Key Features
+## Technical Architecture
 
-- **Deep Learning Computer Vision**: 
-  - Overcomes standard lighting limitations by replacing deterministic HSV thresholding with a custom-trained **PyTorch CNN**. 
-  - Dynamically crops webcam feeds, batches tensor inference, and robustly maps physical colors to digital states.
-- **Dual-Solver Architecture**: Choose between two completely different backend brains to solve your cube:
-  - **⚡ Kociemba (Fast)**: A custom, from-scratch C++ implementation of Kociemba's Two-Phase algorithm that instantly calculates mathematically optimal 20-move solutions via Iterative Deepening A* (IDA*).
-  - **🧠 RL Agent (Experimental)**: A custom PyTorch Deep Reinforcement Learning solver built using Autodidactic Iteration (ADI) that evaluates moves via value-guided beam search on correct physical geometry.
-- **Interactive Playback**:
-  - Step-by-step 2D visualizer that dynamically generates precise SVG arrows showing exactly which slice to turn.
-  - Interactive "Next" and "Prev" controls with complete state history to guide you through the optimal solution without confusion.
+This project implements state-of-the-art algorithms from both classical computer science and modern deep learning to solve the Rubik's cube efficiently.
+
+### 1. Deep Learning Computer Vision (PyTorch CNN)
+Traditional Rubik's cube solvers rely on hardcoded HSV (Hue, Saturation, Value) color thresholding, which frequently fails in real-world lighting conditions (e.g., confusing shadows on white stickers for grey or blue). 
+- **The Solution:** This project replaces deterministic thresholding with a custom-trained **Convolutional Neural Network (CNN)** built in PyTorch. 
+- **Pipeline:** The webcam feed is processed via OpenCV to dynamically crop the 3x3 grid into 9 individual sticker images. These patches are grouped into a tensor batch and passed through the CNN, which robustly maps the physical colors to a digital state matrix, regardless of dynamic lighting or shadows.
+
+### 2. The Algorithmic Solver: Kociemba's Two-Phase Algorithm (C++)
+The default solver is a custom, from-scratch **C++** implementation of **Herbert Kociemba’s Two-Phase Algorithm**.
+- **Phase 1:** Restricts the cube to a mathematical subgroup where edge orientations and corner orientations are solved, and the middle slice edges are in their correct orbit.
+- **Phase 2:** Solves the rest of the cube using only a restricted set of moves (`U, D, R2, L2, F2, B2`).
+- **Performance:** By generating massive pruning tables via Breadth-First Search (BFS) in memory on startup (taking <0.3 seconds), the C++ engine uses Iterative Deepening A* (IDA*) to guarantee a mathematically optimal or near-optimal solution (≤20 moves) out of the 43 quintillion possible states almost instantly.
+
+### 3. The AI Solver: Deep Reinforcement Learning (PyTorch)
+As an experimental alternative to the algorithmic approach, this project features a **Deep Reinforcement Learning Agent** modeled after the breakthrough research paper *"Solving the Rubik's Cube Without Human Knowledge"* (McAleer et al., Autodidactic Iteration).
+- **Autodidactic Iteration (ADI):** The neural network learns by generating its own training data. Starting from a solved cube, it randomly scrambles it, and then learns to predict the "distance to solved" (Value) and the "best next move" (Policy) for every state it encounters.
+- **Value-Guided Beam Search:** During inference, the AI doesn't just guess one move; it uses the PyTorch model to evaluate and explore the top 512 most promising future paths simultaneously (Beam Width = 512) to find the shortest path to the solved state without any human-programmed heuristics.
+
+---
+
+## Interactive UI & Playback
+
+- **Hybrid Integration:** A beautiful, framework-free web interface combining HTML/JS/SVG with a Python Flask backend.
+- **Visualizer:** A step-by-step 2D visualizer dynamically generates precise SVG arrows showing exactly which slice to turn.
+- **State History:** Interactive "Next" and "Prev" controls with a complete state history tree guide you through the optimal solution without confusion.
 
 ---
 
