@@ -446,11 +446,15 @@ function renderReviewNet() {
 async function solveCube() {
     document.getElementById('solveBtn').disabled = true;
     document.getElementById('solveBtn').textContent = 'Solving...';
+    const selectedSolver = document.getElementById('solverSelect').value;
     try {
         const response = await fetch('/api/solve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cube_faces: cubeFaces })
+            body: JSON.stringify({ 
+                cube_faces: cubeFaces,
+                solver: selectedSolver
+            })
         });
         const data = await response.json();
         if (data.solution !== undefined) {
@@ -462,6 +466,25 @@ async function solveCube() {
             
             // Set initial state from cubeFaces
             currentSolution.initial_state = JSON.parse(JSON.stringify(cubeFaces));
+            
+            // Update solver badge
+            const badge = document.getElementById('solverInfoBadge');
+            if (badge) {
+                if (data.solver_used === 'rl') {
+                    badge.innerHTML = `🧠 RL Agent Solved (${data.rl_time_ms}ms)`;
+                    badge.style.display = 'block';
+                    badge.style.background = 'rgba(0,255,100,0.1)';
+                    badge.style.color = '#00ffaa';
+                    badge.style.borderColor = 'rgba(0,255,100,0.3)';
+                } else {
+                    badge.innerHTML = `⚡ Kociemba C++`;
+                    badge.style.display = 'block';
+                    badge.style.background = 'rgba(0,200,255,0.1)';
+                    badge.style.color = '#00c8ff';
+                    badge.style.borderColor = 'rgba(0,200,255,0.3)';
+                }
+            }
+
             goToStep(3);
         } else {
             alert(data.error || "Could not solve cube. Check if colors are correct.");

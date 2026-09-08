@@ -139,7 +139,13 @@
 
                 <div class="review-actions">
                     <button id="backToScanBtn" class="btn btn-outline">← Back to Scan</button>
-                    <button id="solveBtn" class="btn btn-glow btn-wide">🚀 Solve Cube</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="solverSelect" class="btn" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.2); outline: none;">
+                            <option value="kociemba" style="background: #111;">⚡ Kociemba (Fast)</option>
+                            <option value="rl" style="background: #111;">🧠 RL Agent</option>
+                        </select>
+                        <button id="solveBtn" class="btn btn-glow btn-wide" style="margin-top: 0;">🚀 Solve Cube</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -148,11 +154,16 @@
         <section class="step-content" id="step3">
             <div class="solve-layout">
                 <!-- Progress Bar -->
-                <div class="solve-progress">
-                    <div class="progress-track">
-                        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div class="solve-progress" style="flex: 1; margin-bottom: 0;">
+                        <div class="progress-track">
+                            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+                        </div>
+                        <span class="progress-text" id="progressText">Move 0 / 0</span>
                     </div>
-                    <span class="progress-text" id="progressText">Move 0 / 0</span>
+                    <div id="solverInfoBadge" style="margin-left: 20px; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; background: rgba(0,255,100,0.1); color: #00ffaa; display: none; border: 1px solid rgba(0,255,100,0.3);">
+                        🧠 RL Agent Solved
+                    </div>
                 </div>
 
                 <div class="solve-main">

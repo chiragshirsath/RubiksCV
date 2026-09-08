@@ -175,9 +175,55 @@ def classify_colors():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+# ---------------------------------------------------------------------------
+# RL Solver (lazy-loaded)
+# ---------------------------------------------------------------------------
+_rl_solver = None
+
+def get_rl_solver():
+    """Lazy-load the RL solver to avoid slowing down startup if model is missing."""
+    global _rl_solver
+    if _rl_solver is None:
+        try:
+            from rl_solver import RLSolver
+            if os.path.exists("rl_model.pth"):
+                _rl_solver = RLSolver("rl_model.pth")
+                print("✅ RL solver loaded successfully", flush=True)
+            else:
+                print("⚠️  rl_model.pth not found, RL solver disabled", flush=True)
+        except Exception as e:
+            print(f"⚠️  Failed to load RL solver: {e}", flush=True)
+    return _rl_solver
+
+
+def expand_moves(moves):
+    """Expand solution moves (handle B moves and double moves) for the UI."""
+    expanded = []
+    for move in moves:
+        if move == "B":
+            expanded.extend(["TURN_BACK", "F", "TURN_BACK"])
+        elif move == "B'":
+            expanded.extend(["TURN_BACK", "F'", "TURN_BACK"])
+        elif move == "B2":
+            expanded.extend(["TURN_BACK", "F", "F", "TURN_BACK"])
+        elif move.endswith("2"):
+            expanded.extend([move[0], move[0]])
+        else:
+            expanded.append(move)
+    return expanded
+
+
+def solve_with_kociemba(cube_string):
+    """Solve using the C++ Kociemba binary. Returns (solution_str, moves_list) or raises."""
+    result = subprocess.check_output(['./rubiks_solver_cli', cube_string], stderr=subprocess.STDOUT)
+    solution = result.decode('utf-8').strip()
+    moves = solution.strip().split()
+    return solution, moves
+
+
 @app.route('/api/solve', methods=['POST'])
 def solve():
-    """Solve the cube"""
+    """Solve the cube — tries RL agent first (2s timeout), falls back to Kociemba C++."""
     try:
         data = request.json
         cube_faces = data.get('cube_faces')
@@ -191,10 +237,49 @@ def solve():
         color_to_face = {cube_faces[face][4]: face for face in face_order}
         cube_string = ''.join(color_to_face.get(color, '?') for face in face_order for color in cube_faces[face])
         
-        # Solve using custom C++ solver via subprocess
+        requested_solver = data.get('solver', 'kociemba')
+        
+        if requested_solver == 'rl':
+            rl = get_rl_solver()
+            if rl is None:
+                return jsonify({'error': 'RL model not loaded or missing.'}), 500
+                
+            import time
+            t0 = time.time()
+            # Since RL is explicitly requested, we can give it more time (e.g. 5s)
+            rl_moves = rl.solve(cube_string, timeout=5.0)
+            rl_time = time.time() - t0
+            
+            if rl_moves is not None:
+                solution = ' '.join(rl_moves)
+                moves = rl_moves
+                expanded_moves = expand_moves(moves)
+                print(f"🤖 RL solved in {len(moves)} moves ({rl_time:.2f}s)", flush=True)
+
+                return jsonify({
+                    'solution': solution,
+                    'moves': moves,
+                    'expanded_moves': expanded_moves,
+                    'cube_string': cube_string,
+                    'solver_used': 'rl',
+                    'rl_time_ms': int(rl_time * 1000)
+                })
+            else:
+                print(f"🤖 RL failed ({rl_time:.2f}s)", flush=True)
+                return jsonify({'error': 'RL Agent could not solve this scramble (likely too complex, try Kociemba).'}), 400
+                
+        # --- Default: C++ Kociemba solver ---
         try:
-            result = subprocess.check_output(['./rubiks_solver_cli', cube_string], stderr=subprocess.STDOUT)
-            solution = result.decode('utf-8').strip()
+            solution, moves = solve_with_kociemba(cube_string)
+            expanded_moves = expand_moves(moves)
+            
+            return jsonify({
+                'solution': solution,
+                'moves': moves,
+                'expanded_moves': expanded_moves,
+                'cube_string': cube_string,
+                'solver_used': 'kociemba'
+            })
         except subprocess.CalledProcessError as e:
             err_output = e.output.decode('utf-8').strip()
             print(f"DEBUG: Solver error: {err_output}", flush=True)
@@ -209,29 +294,7 @@ def solve():
             return jsonify({'error': f"C++ Solver Error: {err_output}"}), 500
         except FileNotFoundError:
             return jsonify({'error': 'Solver executable not found. Did you compile it using make?'}), 500
-        
-        moves = solution.strip().split()
-        
-        # Expand moves (handle B moves and double moves)
-        expanded_moves = []
-        for move in moves:
-            if move == "B":
-                expanded_moves.extend(["TURN_BACK", "F", "TURN_BACK"])
-            elif move == "B'":
-                expanded_moves.extend(["TURN_BACK", "F'", "TURN_BACK"])
-            elif move == "B2":
-                expanded_moves.extend(["TURN_BACK", "F", "F", "TURN_BACK"])
-            elif move.endswith("2"):
-                expanded_moves.extend([move[0], move[0]])
-            else:
-                expanded_moves.append(move)
-        
-        return jsonify({
-            'solution': solution,
-            'moves': moves,
-            'expanded_moves': expanded_moves,
-            'cube_string': cube_string
-        })
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
