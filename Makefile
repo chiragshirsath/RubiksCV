@@ -1,16 +1,18 @@
 CXX = g++
-CXXFLAGS = -O3 -std=c++17 -Wall
+CXXFLAGS = -O3 -std=c++17 -Wall -Wno-narrowing -Wno-write-strings -fpermissive -Isrc/include
+LDFLAGS = 
 
-TARGET_CLI = rubiks_solver_cli
-OBJS_CLI = src/cli_solver.o src/solver.o
+SRCS = $(wildcard src/*.cpp)
+OBJS = $(SRCS:.cpp=.o)
+TARGET = rubiks_solver_cli
 
-all: $(TARGET_CLI)
+all: $(TARGET)
 
-$(TARGET_CLI): $(OBJS_CLI)
-	$(CXX) $(OBJS_CLI) -o $(TARGET_CLI)
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f src/*.o $(TARGET_CLI)
+	rm -f $(OBJS) $(TARGET)

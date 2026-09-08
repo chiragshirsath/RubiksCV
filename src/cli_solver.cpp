@@ -1,35 +1,31 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include "solver.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "include/search.h"
 
-int main(int argc, char** argv) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <54_char_cube_string>\n";
-        return 1;
-    }
-
-    std::string cube_string = argv[1];
-    if (cube_string.length() != 54) {
-        std::cerr << "Error: Cube string must be exactly 54 characters long.\n";
-        return 1;
-    }
-
-    try {
-        std::vector<std::string> solution = solve_rubiks_cube(cube_string);
-        
-        // Output space-separated moves
-        for (size_t i = 0; i < solution.size(); ++i) {
-            std::cout << solution[i];
-            if (i < solution.size() - 1) {
-                std::cout << " ";
-            }
+int main(int argc, char **argv)
+{
+    if (argc > 1) {
+        char patternized[64];
+        char* facelets = argv[1];
+        if (argc > 2) {
+            patternize(facelets, argv[2], patternized);
+            facelets = patternized;
         }
-        std::cout << "\n";
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
+        char *sol = solution(
+            facelets,
+            24,
+            1000,
+            0,
+            "cache"
+        );
+        if (sol == NULL) {
+            puts("Unsolvable cube!");
+            return 2;
+        }
+        printf("%s\n", sol);
+        free(sol);
+        return 0;
+    } else {
         return 1;
     }
-
-    return 0;
 }

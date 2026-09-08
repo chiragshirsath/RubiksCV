@@ -197,7 +197,8 @@ def solve():
             solution = result.decode('utf-8').strip()
         except subprocess.CalledProcessError as e:
             err_output = e.output.decode('utf-8').strip()
-            if "Cannot identify" in err_output or "Invalid" in err_output:
+            print(f"DEBUG: Solver error: {err_output}", flush=True)
+            if "Cannot identify" in err_output or "Invalid" in err_output or "Unsolvable" in err_output:
                 friendly_err = (
                     "Invalid cube state! The camera likely misread a color due to lighting "
                     "(e.g., confusing Orange and Red). Please look at the 2D Cube State map "
